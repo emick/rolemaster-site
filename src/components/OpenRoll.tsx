@@ -5,13 +5,11 @@ const DICE_ANIMATION_MS = 1600
 
 function VectorDie({ face, animate, tone }: { face: string; animate: boolean; tone: 'ruby' | 'ivory' }) {
   const id = useId()
-  const [progress, setProgress] = useState(animate ? 0 : 1)
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [progress, setProgress] = useState(animate && !reducedMotion ? 0 : 1)
 
   useEffect(() => {
-    if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setProgress(1)
-      return
-    }
+    if (!animate || reducedMotion) return
     const start = Date.now()
     let frame = 0
     const tick = () => {
@@ -21,7 +19,7 @@ function VectorDie({ face, animate, tone }: { face: string; animate: boolean; to
     }
     tick()
     return () => cancelAnimationFrame(frame)
-  }, [animate])
+  }, [animate, reducedMotion])
 
   const labels = d10Labels(face)
   const ivory = tone === 'ivory'
