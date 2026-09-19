@@ -67,7 +67,8 @@ function VectorDie({ face, animate, tone }: { face: string; animate: boolean; to
   )
 }
 
-function makeOpenRoll() {
+function makeOpenRoll(fixedRoll: number | null) {
+  if (fixedRoll !== null) return [fixedRoll]
   const results: number[] = []
   do results.push(Math.floor(Math.random() * 100) + 1)
   while (results.at(-1)! >= 96 && results.length < 20)
@@ -75,8 +76,12 @@ function makeOpenRoll() {
 }
 
 export function OpenRoll() {
+  const fixedRollParam = new URLSearchParams(window.location.search).get('fixedRoll')
+  const parsedFixedRoll = fixedRollParam === null ? null : Number(fixedRollParam)
+  const fixedRoll = Number.isInteger(parsedFixedRoll) && parsedFixedRoll! >= 1 && parsedFixedRoll! <= 100 ? parsedFixedRoll : null
   const [rolls, setRolls] = useState([20])
   const [pending, setPending] = useState<number[] | null>(null)
+  const [toast, setToast] = useState<'fumble' | 'unlimited' | null>(null)
   const [rollKey, setRollKey] = useState(0)
   const timeout = useRef<number>(undefined)
   const shown = (pending ?? rolls).at(-1) ?? 20
@@ -87,18 +92,24 @@ export function OpenRoll() {
 
   function roll() {
     if (rolling) return
-    const next = makeOpenRoll()
+    const next = makeOpenRoll(fixedRoll)
+    setToast(null)
     setPending(next)
     setRollKey((key) => key + 1)
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : DICE_ANIMATION_MS
     timeout.current = window.setTimeout(() => {
       setRolls(next)
       setPending(null)
+      const result = next.at(-1)!
+      setToast(result >= 96 ? 'unlimited' : result <= 5 ? 'fumble' : null)
     }, duration)
   }
 
   return (
     <div className="open-roll">
+      {toast && <div className={`roll-toast roll-toast--${toast}`} role="status">
+        {toast === 'fumble' ? 'Moka!' : 'Rajaton!'}
+      </div>}
       <button className="dice-button" onClick={roll} disabled={rolling} aria-label="Heitä avoin heitto">
         <VectorDie key={`ruby-${rollKey}`} face={digits[0]} tone="ruby" animate={rolling} />
         <VectorDie key={`ivory-${rollKey}`} face={digits[1]} tone="ivory" animate={rolling} />
