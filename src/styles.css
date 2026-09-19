@@ -59,6 +59,7 @@ h1 em { font-family:Newsreader,serif; font-weight:500; text-transform:none; colo
 .roll-toast { position:absolute; z-index:2; top:13%; left:50%; padding:9px 18px; border-radius:999px; color:#fff; font:700 16px Cinzel,serif; letter-spacing:.06em; box-shadow:0 8px 20px #24211d30; pointer-events:none; animation:roll-toast-float 2.4s ease-out both; }
 .roll-toast--fumble { background:#b3261e; }
 .roll-toast--unlimited { background:#713b91; }
+.roll-toast--hundred { background:#087f5b; }
 @keyframes roll-toast-float { 0% { opacity:0; transform:translate(-50%,12px) scale(.9); } 15%,70% { opacity:1; transform:translate(-50%,0) scale(1); } 100% { opacity:0; transform:translate(-50%,-24px) scale(1); } }
 .dice-button { position:relative; z-index:1; width:270px; height:155px; display:flex; justify-content:center; align-items:center; gap:-4px; border:0; background:transparent; cursor:pointer; }
 .dice-button:disabled { cursor:wait; }

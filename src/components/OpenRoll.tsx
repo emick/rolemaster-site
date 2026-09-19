@@ -67,12 +67,13 @@ function VectorDie({ face, animate, tone }: { face: string; animate: boolean; to
   )
 }
 
-function makeOpenRoll(fixedRoll: number | null) {
+function rollD100() {
+  return Math.floor(Math.random() * 100) + 1
+}
+
+function makeRoll(fixedRoll: number | null) {
   if (fixedRoll !== null) return [fixedRoll]
-  const results: number[] = []
-  do results.push(Math.floor(Math.random() * 100) + 1)
-  while (results.at(-1)! >= 96 && results.length < 20)
-  return results
+  return [rollD100()]
 }
 
 export function OpenRoll() {
@@ -81,7 +82,7 @@ export function OpenRoll() {
   const fixedRoll = Number.isInteger(parsedFixedRoll) && parsedFixedRoll! >= 1 && parsedFixedRoll! <= 100 ? parsedFixedRoll : null
   const [rolls, setRolls] = useState([20])
   const [pending, setPending] = useState<number[] | null>(null)
-  const [toast, setToast] = useState<'fumble' | 'unlimited' | null>(null)
+  const [toast, setToast] = useState<'fumble' | 'unlimited' | 'hundred' | null>(null)
   const [rollKey, setRollKey] = useState(0)
   const timeout = useRef<number>(undefined)
   const shown = (pending ?? rolls).at(-1) ?? 20
@@ -92,7 +93,7 @@ export function OpenRoll() {
 
   function roll() {
     if (rolling) return
-    const next = makeOpenRoll(fixedRoll)
+    const next = makeRoll(fixedRoll)
     setToast(null)
     setPending(next)
     setRollKey((key) => key + 1)
@@ -101,16 +102,16 @@ export function OpenRoll() {
       setRolls(next)
       setPending(null)
       const result = next.at(-1)!
-      setToast(result >= 96 ? 'unlimited' : result <= 5 ? 'fumble' : null)
+      setToast(result === 100 ? 'hundred' : result >= 96 ? 'unlimited' : result <= 5 ? 'fumble' : null)
     }, duration)
   }
 
   return (
     <div className="open-roll">
       {toast && <div className={`roll-toast roll-toast--${toast}`} role="status">
-        {toast === 'fumble' ? 'Moka!' : 'Rajaton!'}
+        {toast === 'fumble' ? 'Moka!' : toast === 'hundred' ? 'Sata!' : 'Rajaton!'}
       </div>}
-      <button className="dice-button" onClick={roll} disabled={rolling} aria-label="Heitä avoin heitto">
+      <button className="dice-button" onClick={roll} disabled={rolling} aria-label="Heitä d100">
         <VectorDie key={`ruby-${rollKey}`} face={digits[0]} tone="ruby" animate={rolling} />
         <VectorDie key={`ivory-${rollKey}`} face={digits[1]} tone="ivory" animate={rolling} />
       </button>
