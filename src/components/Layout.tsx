@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { Icon } from './Icon'
 
 export function Layout() {
   return (
@@ -12,6 +13,9 @@ export function Layout() {
           <NavLink to="/">Etusivu</NavLink>
           <NavLink to="/errata">Errata</NavLink>
           <NavLink to="/lomakkeet">Lomakkeet</NavLink>
+          <a className="github-link" href="https://github.com/emick/rolemaster-site" target="_blank" rel="noreferrer" aria-label="GitHub">
+            <Icon name="github" size={21} />
+          </a>
         </nav>
       </header>
       <main><Outlet /></main>

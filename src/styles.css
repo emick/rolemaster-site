@@ -17,6 +17,8 @@ button, input { font: inherit; }
 nav { display:flex; gap:36px; align-items:center; }
 nav a { text-decoration:none; text-transform:uppercase; letter-spacing:.12em; font-size:12px; font-weight:600; padding:34px 0 30px; border-bottom:3px solid transparent; }
 nav a.active { color:var(--red); border-color:var(--red); }
+nav .github-link { display:grid; place-items:center; }
+nav .github-link:hover { color:var(--red); }
 .home-split { width:min(1100px,100%); margin:0 auto; padding:54px 48px 64px; display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:44px 52px; align-items:center; }
 .home-intro { min-width:0; max-width:720px; padding:24px 0 32px; }
 .home-intro h1 { font-size:clamp(40px,4.5vw,60px); margin:22px 0 18px; }
