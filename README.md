@@ -21,9 +21,13 @@ Lisää korjaukset tiedostoon `public/data/errata.json`. Jokainen merkintä noud
   "section": "Luvun tai taulukon nimi",
   "published": "2026-09-19",
   "original": "Painettu teksti",
-  "correction": "Korjattu teksti"
+  "correction": "Korjattu teksti",
+  "explanation": "Korjauksen valinnainen perustelu",
+  "category": "errata"
 }
 ```
+
+`category` on `errata` varsinaisille virheille ja `minor` pienille virheille.
 
 ## Julkaisu
 

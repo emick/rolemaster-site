@@ -6,4 +6,6 @@ export type Erratum = {
   published: string
   original: string
   correction: string
+  explanation?: string
+  category: 'errata' | 'minor'
 }
