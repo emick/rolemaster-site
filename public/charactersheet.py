@@ -21,18 +21,32 @@ ROOT = Path(__file__).resolve().parent
 BLACK = (0, 0, 0)
 LABEL_FONT = fitz.Font("tibo")
 LEFT_FIELD_PADDING = 1.5
+POINTS_PER_MM = 72 / 25.4
+A4_WIDTH = 210 * POINTS_PER_MM
+A4_HEIGHT = 297 * POINTS_PER_MM
+PRINT_MARGIN = 10 * POINTS_PER_MM
+# Include the outer border's half-stroke when fitting the original artwork.
+ARTWORK = fitz.Rect(46.45, 8.45, 529.55, 694.55)
 
 
 class Form:
     def __init__(self) -> None:
         self.doc = fitz.open()
-        self.page = self.doc.new_page(width=595.26, height=841.86)
+        self.page = self.doc.new_page(width=A4_WIDTH, height=A4_HEIGHT)
+        self.scale = min((A4_WIDTH - 2 * PRINT_MARGIN) / ARTWORK.width,
+                         (A4_HEIGHT - 2 * PRINT_MARGIN) / ARTWORK.height)
+        offset_x = (A4_WIDTH - ARTWORK.width * self.scale) / 2 - ARTWORK.x0 * self.scale
+        offset_y = (A4_HEIGHT - ARTWORK.height * self.scale) / 2 - ARTWORK.y0 * self.scale
+        self.layout = fitz.Matrix(self.scale, 0, 0, self.scale, offset_x, offset_y)
 
     def line(self, x1: float, y1: float, x2: float, y2: float, width: float = 0.35) -> None:
-        self.page.draw_line((x1, y1), (x2, y2), color=BLACK, width=width)
+        self.page.draw_line(fitz.Point(x1, y1) * self.layout,
+                            fitz.Point(x2, y2) * self.layout,
+                            color=BLACK, width=width * self.scale)
 
     def text(self, x: float, y: float, value: str, size: float = 8) -> None:
-        self.page.insert_text((x, y), value, fontname="tibo", fontsize=size, color=BLACK)
+        self.page.insert_text(fitz.Point(x, y) * self.layout, value,
+                              fontname="tibo", fontsize=size * self.scale, color=BLACK)
 
     def center(self, x: float, y: float, value: str, size: float = 8) -> None:
         width = LABEL_FONT.text_length(value, fontsize=size)
@@ -46,9 +60,9 @@ class Form:
         widget.field_label = label
         widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
         text_x1 = x1 if centered else x1 + LEFT_FIELD_PADDING
-        widget.rect = fitz.Rect(text_x1, baseline - 10.5, x2, baseline - 0.3)
+        widget.rect = fitz.Rect(text_x1, baseline - 10.5, x2, baseline - 0.3) * self.layout
         widget.text_font = "Helv"
-        widget.text_fontsize = 7
+        widget.text_fontsize = 7 * self.scale
         widget.text_color = BLACK
         widget.border_width = 0
         added = self.page.add_widget(widget)
@@ -68,9 +82,9 @@ class Form:
         widget.field_type = fitz.PDF_WIDGET_TYPE_CHECKBOX
         # ZapfDingbats character 8 is the standard PDF cross (X) mark.
         widget.button_caption = "8"
-        widget.rect = fitz.Rect(x, y, x + 5, y + 5)
+        widget.rect = fitz.Rect(x, y, x + 5, y + 5) * self.layout
         widget.border_color = BLACK
-        widget.border_width = 0.55
+        widget.border_width = 0.55 * self.scale
         widget.text_color = BLACK
         widget.fill_color = (1, 1, 1)
         widget.field_value = "Off"
@@ -81,7 +95,8 @@ class Form:
         state = self.page.load_widget(added.xref).on_state()
         _, appearance = self.doc.xref_get_key(added.xref, f"AP/N/{state}")
         self.doc.update_stream(int(appearance.split()[0]), (
-            "q 1 1 1 rg 0 0 5 5 re f 0 G 0.55 w "
+            f"q {self.scale:.8f} 0 0 {self.scale:.8f} 0 0 cm "
+            "1 1 1 rg 0 0 5 5 re f 0 G 0.55 w "
             "0.275 0.275 4.45 4.45 re S "
             "0.65 w 1 1 m 4 4 l 1 4 m 4 1 l S Q"
         ).encode("ascii"))
@@ -218,6 +233,17 @@ def verify(path: Path) -> tuple[int, int]:
     with fitz.open(path) as doc:
         assert len(doc) == 1
         page = doc[0]
+        assert abs(page.rect.width - A4_WIDTH) < 0.01
+        assert abs(page.rect.height - A4_HEIGHT) < 0.01
+        printable = fitz.Rect(PRINT_MARGIN - 0.01, PRINT_MARGIN - 0.01,
+                              A4_WIDTH - PRINT_MARGIN + 0.01,
+                              A4_HEIGHT - PRINT_MARGIN + 0.01)
+        for drawing in page.get_drawings():
+            rect = drawing["rect"]
+            half_stroke = (drawing.get("width") or 0) / 2
+            painted = fitz.Rect(rect.x0 - half_stroke, rect.y0 - half_stroke,
+                                rect.x1 + half_stroke, rect.y1 + half_stroke)
+            assert printable.contains(painted), "Artwork exceeds A4 print margins"
         assert not page.get_images(), "Output must contain no raster images"
         assert "Näppäryys" in page.get_text()
         widgets = list(page.widgets())
@@ -259,8 +285,10 @@ def verify(path: Path) -> tuple[int, int]:
                     f"Field {widget.field_name} overlaps label {label['text']!r}"
                 )
         for widget in widgets:
-            assert page.rect.contains(widget.rect)
+            assert printable.contains(widget.rect)
             assert widget.rect.width > 0 and widget.rect.height > 0
+        for label in labels:
+            assert printable.contains(fitz.Rect(label["bbox"])), "Label exceeds print margins"
         texts[0].field_value = "Väinö Ääkkönen"
         texts[0].update()
         for widget in checks:
